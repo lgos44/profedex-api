@@ -122,7 +122,7 @@ $app->post('/register', function(Request $req,  Response $res) {
                 $response["message"] = "Sorry, this email already in use.";
             }
             // echo json response
-            return $res->withJson($response, 400);
+            return $res->withJson($response, 201);
         });
 
 /**
@@ -194,8 +194,14 @@ $app->get('/professors',  function(Request $req,  Response $res)  {
             $res_json = $res->withHeader('Content-type', 'application/json');
             return $res_json->withStatus(200)->write(json_encode($response));
         });
-
 /*
+$app->get('/professor/{id}',  function(Request $req,  Response $res)  {
+    $id = $request->getAttribute('id');
+    $result = $db->getProfessorByID($id);
+    $response["error"] = false;
+    $response["professors"] = array();
+}
+
  * ------------------------ METHODS WITH AUTHENTICATION ------------------------
  */
 
