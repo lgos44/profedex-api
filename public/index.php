@@ -85,7 +85,7 @@ $mw = function authenticate($req, $res, $next) {
  * params - name, email, password
  */
 
-
+ 
 $app->post('/register', function(Request $req,  Response $res) {
             // check for required params
 
@@ -181,27 +181,34 @@ $app->get('/professors',  function(Request $req,  Response $res)  {
             $response["professors"] = array();
 
             // looping through result and preparing tasks array
-            while ($task = $result->fetch_assoc()) {
+            while ($prof = $result->fetch_assoc()) {
                 $tmp = array();
-                $tmp["professor_id"] = $task["professor_id"];
-                $tmp["professor_name"] = $task["professor_name"];
-                $tmp["professor_picture"] = $task["professor_picture"];
-                $tmp["professor_description"] = $task["professor_description"];
-                $tmp["professor_email"] = $task["professor_email"];
-                $tmp["professor_room"] = $task["professor_room"];
+                $tmp["professor_id"] = $prof["professor_id"];
+                $tmp["professor_name"] = $prof["professor_name"];
+                $tmp["professor_picture"] = $prof["professor_picture"];
+                $tmp["professor_description"] = $prof["professor_description"];
+                $tmp["professor_email"] = $prof["professor_email"];
+                $tmp["professor_room"] = $prof["professor_room"];
                 array_push($response["professors"], $tmp);
             }
             $res_json = $res->withHeader('Content-type', 'application/json');
             return $res_json->withStatus(200)->write(json_encode($response));
         });
-/*
-$app->get('/professor/{id}',  function(Request $req,  Response $res)  {
-    $id = $request->getAttribute('id');
-    $result = $db->getProfessorByID($id);
-    $response["error"] = false;
-    $response["professors"] = array();
-}
 
+/**
+ *  Returns professors by ID
+ */
+$app->get('/professor/{id}',  function(Request $req,  Response $res)  {
+    $id = $req->getAttribute('id');
+    $db = new DbHandler();
+    $result = $db->getProfessorByID($id);
+    $response = array();
+    $response["error"] = false;
+    $prof = $result->fetch_assoc();
+    $response["professor"] = $prof;
+    return $res->withJson($response, 200);
+});
+/*
  * ------------------------ METHODS WITH AUTHENTICATION ------------------------
  */
 

@@ -201,9 +201,18 @@ class DbHandler {
         $stmt = $this->conn->prepare("SELECT * FROM professor");
         //$stmt->bind_param("i", $number);
         $stmt->execute();
-        $tasks = $stmt->get_result();
+        $professors = $stmt->get_result();
         $stmt->close();
-        return $tasks;
+        return $professors;
+    }
+
+    public function getProfessorByID($id) {
+        $stmt = $this->conn->prepare("SELECT * FROM professor WHERE professor_id = ?");
+        $stmt->bind_param("i", $id);
+        $stmt->execute();
+        $professor = $stmt->get_result();
+        $stmt->close();
+        return $professor;
     }
 }
 ?>
