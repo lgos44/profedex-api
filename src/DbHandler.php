@@ -197,9 +197,17 @@ class DbHandler {
 
     /* ------------- `professor` table method ------------------ */
 
-    public function getProfessors() {
-        $stmt = $this->conn->prepare("SELECT * FROM professor");
-        //$stmt->bind_param("i", $number);
+    public function getProfessors($sort, $order, $limit) {
+
+        $query = "SELECT * FROM professor ";
+        if ($sort != NULL) {
+            $query .= "ORDER BY $sort $order ";
+        }
+        if ($limit != NULL) {
+            $query .= "LIMIT $limit";
+        }
+        $stmt = $this->conn->prepare($query);
+        //$stmt->bind_param("s", $test);
         $stmt->execute();
         $professors = $stmt->get_result();
         $stmt->close();

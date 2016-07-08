@@ -33,8 +33,24 @@ class AppContainer
         return $app;
     }
 }
+$config['displayErrorDetails'] = true;
+$config['addContentLengthHeader'] = false;
 
-$app =  AppContainer::getInstance(); //new \Slim\App;
+$config['db']['host']   = "localhost";
+$config['db']['user']   = "user";
+$config['db']['pass']   = "password";
+$config['db']['dbname'] = "exampleapp";
+
+$app = new \Slim\App(["settings" => $config]);
+//$app =  AppContainer::getInstance(); //new \Slim\App;
+$container = $app->getContainer();
+$container['logger'] = function($c) {
+    $logger = new \Monolog\Logger('my_logger');
+    $file_handler = new \Monolog\Handler\StreamHandler("../logs/app.log");
+    $logger->pushHandler($file_handler);
+    return $logger;
+};
+
 
 // User id from db - Global Variable
 $user_id = NULL;
@@ -170,17 +186,32 @@ $app->post('/login', function(Request $req,  Response $res) {
         });
 
 
-$app->get('/professors',  function(Request $req,  Response $res)  {
-            $response = array();
+$app->get('/professors',  function(Request $request,  Response $response)  {
+            $data = array();
             $db = new DbHandler();
+            $parameters = $request->getQueryParams();
+            // fetching all professors
+            $sort = array_key_exists("sort_by", $parameters)? $parameters["sort_by"] : NULL;
+            $order =  array_key_exists("order", $parameters)? $parameters["order"] : NULL;
+            $limit = array_key_exists("limit", $parameters)? $parameters["limit"] : NULL;
 
-            // fetching all user tasks
-            $result = $db->getProfessors();
+            if ($request->hasHeader('sort_by')) {
+                $sort = $request->getHeader('sort_by')[0];
+            } 
 
-            $response["error"] = false;
-            $response["professors"] = array();
+            if ($request->hasHeader('order')) {
+                $order = $request->getHeader('order')[0];
+            }
 
-            // looping through result and preparing tasks array
+            if ($request->hasHeader('limit')) {
+                $limit = $request->getHeader('limit')[0];
+            } 
+
+            $result = $db->getProfessors($sort, $order, $limit);
+            $data["error"] = false;
+            $data["professors"] = array();
+
+            // looping through result and preparing professor array
             while ($prof = $result->fetch_assoc()) {
                 $tmp = array();
                 $tmp["professor_id"] = $prof["professor_id"];
@@ -189,16 +220,16 @@ $app->get('/professors',  function(Request $req,  Response $res)  {
                 $tmp["professor_description"] = $prof["professor_description"];
                 $tmp["professor_email"] = $prof["professor_email"];
                 $tmp["professor_room"] = $prof["professor_room"];
-                array_push($response["professors"], $tmp);
+                array_push($data["professors"], $tmp);
             }
-            $res_json = $res->withHeader('Content-type', 'application/json');
-            return $res_json->withStatus(200)->write(json_encode($response));
+            $res_json = $response->withHeader('Content-type', 'application/json');
+            return $res_json->withStatus(200)->write(json_encode($data));
         });
 
 /**
  *  Returns professors by ID
  */
-$app->get('/professor/{id}',  function(Request $req,  Response $res)  {
+$app->get('/professors/{id}',  function(Request $req,  Response $res)  {
     $id = $req->getAttribute('id');
     $db = new DbHandler();
     $result = $db->getProfessorByID($id);
@@ -208,6 +239,7 @@ $app->get('/professor/{id}',  function(Request $req,  Response $res)  {
     $response["professor"] = $prof;
     return $res->withJson($response, 200);
 });
+
 /*
  * ------------------------ METHODS WITH AUTHENTICATION ------------------------
  */
