@@ -34,7 +34,7 @@ class AppContainer
     }
 }
 $config['displayErrorDetails'] = true;
-$config['addContentLengthHeader'] = false;
+$config['addContentLengthHeader'] = false; 
 
 $config['db']['host']   = "localhost";
 $config['db']['user']   = "user";
@@ -188,12 +188,14 @@ $app->post('/login', function(Request $req,  Response $res) {
 
 $app->get('/professors',  function(Request $request,  Response $response)  {
             $data = array();
-            $db = new DbHandler();
+            $db = new DbHandler($this->logger);
             $parameters = $request->getQueryParams();
             // fetching all professors
             $sort = array_key_exists("sort_by", $parameters)? $parameters["sort_by"] : NULL;
             $order =  array_key_exists("order", $parameters)? $parameters["order"] : NULL;
-            $limit = array_key_exists("limit", $parameters)? $parameters["limit"] : NULL;
+            $lower_limit = array_key_exists("lower_limit", $parameters)? $parameters["lower_limit"] : NULL;
+            $upper_limit = array_key_exists("upper_limit", $parameters)? $parameters["upper_limit"] : NULL;
+
 
             if ($request->hasHeader('sort_by')) {
                 $sort = $request->getHeader('sort_by')[0];
@@ -203,11 +205,14 @@ $app->get('/professors',  function(Request $request,  Response $response)  {
                 $order = $request->getHeader('order')[0];
             }
 
-            if ($request->hasHeader('limit')) {
-                $limit = $request->getHeader('limit')[0];
+            if ($request->hasHeader('lower_limit')) {
+                $lower_limit = (int)$request->getHeader('lower_limit')[0];
+            } 
+            if ($request->hasHeader('upper_limit')) {
+                $upper_limit = (int)$request->getHeader('upper_limit')[0];
             } 
 
-            $result = $db->getProfessors($sort, $order, $limit);
+            $result = $db->getProfessors($sort, $order, $lower_limit, $upper_limit);
             $data["error"] = false;
             $data["professors"] = array();
 

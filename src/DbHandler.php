@@ -3,11 +3,13 @@
 class DbHandler {
 
     private $conn;
+    private $logger;
 
-    function __construct() {
+    function __construct($logger = NULL) {
         require_once dirname(__FILE__) . '/DbConnect.php';
         // opening db connection
         $db = new DbConnect();
+        $this->logger = $logger;
         $this->conn = $db->connect();
     }
 
@@ -197,14 +199,17 @@ class DbHandler {
 
     /* ------------- `professor` table method ------------------ */
 
-    public function getProfessors($sort, $order, $limit) {
-
+    public function getProfessors($sort = NULL, $order = NULL, $lower_limit = 0, $upper_limit = 100) {
         $query = "SELECT * FROM professor ";
-        if ($sort != NULL) {
+        if ($sort != NULL && in_array($sort, $this->getTableFields("professor")) ) {
+            if (strcasecmp($order, "desc") == 0) {$order = "DESC";} else { $order = "ASC";};
             $query .= "ORDER BY $sort $order ";
         }
-        if ($limit != NULL) {
-            $query .= "LIMIT $limit";
+        if ($upper_limit != NULL && is_int($upper_limit)) {
+            if ($lower_limit != NULL && is_int($lower_limit))
+                $query .= "LIMIT $lower_limit, $upper_limit";
+            else
+                $query .= "LIMIT $upper_limit";
         }
         $stmt = $this->conn->prepare($query);
         //$stmt->bind_param("s", $test);
@@ -221,6 +226,18 @@ class DbHandler {
         $professor = $stmt->get_result();
         $stmt->close();
         return $professor;
+    }
+
+    public function getTableFields($table) {
+        $stmt = $this->conn->prepare("SHOW COLUMNS FROM $table");
+        //$stmt->bind_param("s", $table);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $fields = array();
+        while ($col = $result->fetch_array()) {
+            array_push($fields, $col[0]);
+        }
+        return $fields;
     }
 }
 ?>
