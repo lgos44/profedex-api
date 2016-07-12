@@ -199,18 +199,19 @@ class DbHandler {
 
     /* ------------- `professor` table method ------------------ */
 
-    public function getProfessors($sort = NULL, $order = NULL, $lower_limit = 0, $upper_limit = 100) {
+    public function getProfessors($sort = NULL, $order = NULL, $start = 0, $limit = 20) {
         $query = "SELECT * FROM professor ";
         if ($sort != NULL && in_array($sort, $this->getTableFields("professor")) ) {
             if (strcasecmp($order, "desc") == 0) {$order = "DESC";} else { $order = "ASC";};
             $query .= "ORDER BY $sort $order ";
         }
-        if ($upper_limit != NULL && is_int($upper_limit)) {
-            if ($lower_limit != NULL && is_int($lower_limit))
-                $query .= "LIMIT $lower_limit, $upper_limit";
+        if ($limit != NULL && is_int($limit)) {
+            if ($start != NULL && is_int($limit))
+                $query .= "LIMIT $limit OFFSET $start";
             else
-                $query .= "LIMIT $upper_limit";
+                $query .= "LIMIT $limit";
         }
+        $this->logger->addInfo($query);
         $stmt = $this->conn->prepare($query);
         //$stmt->bind_param("s", $test);
         $stmt->execute();

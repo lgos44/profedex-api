@@ -193,9 +193,9 @@ $app->get('/professors',  function(Request $request,  Response $response)  {
             // fetching all professors
             $sort = array_key_exists("sort_by", $parameters)? $parameters["sort_by"] : NULL;
             $order =  array_key_exists("order", $parameters)? $parameters["order"] : NULL;
-            $lower_limit = array_key_exists("lower_limit", $parameters)? $parameters["lower_limit"] : NULL;
-            $upper_limit = array_key_exists("upper_limit", $parameters)? $parameters["upper_limit"] : NULL;
-
+            $start = array_key_exists("start", $parameters)? (int)$parameters["start"] : NULL;
+            $limit = array_key_exists("limit", $parameters)? (int)$parameters["limit"] : NULL;
+            sleep(1);
 
             if ($request->hasHeader('sort_by')) {
                 $sort = $request->getHeader('sort_by')[0];
@@ -205,14 +205,14 @@ $app->get('/professors',  function(Request $request,  Response $response)  {
                 $order = $request->getHeader('order')[0];
             }
 
-            if ($request->hasHeader('lower_limit')) {
-                $lower_limit = (int)$request->getHeader('lower_limit')[0];
+            if ($request->hasHeader('start')) {
+                $start = (int)$request->getHeader('start')[0];
             } 
-            if ($request->hasHeader('upper_limit')) {
-                $upper_limit = (int)$request->getHeader('upper_limit')[0];
+            if ($request->hasHeader('limit')) {
+                $limit = (int)$request->getHeader('limit')[0];
             } 
 
-            $result = $db->getProfessors($sort, $order, $lower_limit, $upper_limit);
+            $result = $db->getProfessors($sort, $order, $start, $limit);
             $data["error"] = false;
             $data["professors"] = array();
 
