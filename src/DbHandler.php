@@ -211,13 +211,23 @@ class DbHandler {
             else
                 $query .= "LIMIT $limit";
         }
-        $this->logger->addInfo($query);
         $stmt = $this->conn->prepare($query);
         //$stmt->bind_param("s", $test);
         $stmt->execute();
         $professors = $stmt->get_result();
         $stmt->close();
         return $professors;
+    }
+
+    public function createProfessor($data) {
+        $stmt = $this->conn->prepare("INSERT INTO professor (professor_name, professor_email, professor_description, professor_room) VALUES (?, ? ,?, ?) ");
+        if ($stmt) {
+            $stmt->bind_param('ssss', $data['name'], $data['email'], $data['description'], $data['room']);
+            return $stmt->execute();
+        } else {
+            $this->logger->addInfo($this->conn->error);
+            return false;
+        }
     }
 
     public function getProfessorByID($id) {
@@ -231,7 +241,6 @@ class DbHandler {
 
     public function getTableFields($table) {
         $stmt = $this->conn->prepare("SHOW COLUMNS FROM $table");
-        //$stmt->bind_param("s", $table);
         $stmt->execute();
         $result = $stmt->get_result();
         $fields = array();
@@ -240,5 +249,26 @@ class DbHandler {
         }
         return $fields;
     }
+
+    public function createComment($id, $data) {
+        $stmt = $this->conn->prepare("INSERT INTO comment (student_id, comment_text, professor_id) VALUES (?, ? ,?) ");
+        if ($stmt) {
+            $stmt->bind_param('isi', $data['user_id'], $data['comment'], $id);
+            return $stmt->execute();
+        } else {
+            $this->logger->addInfo($this->conn->error);
+            return false;
+        }   
+    }
+
+    public function getComment($id, $page = 1) {
+        $stmt = $this->conn->prepare("SELECT * FROM comment WHERE professor_id = ?");
+        $stmt->bind_param("i", $id);
+        $stmt->execute();
+        $comments = $stmt->get_result();
+        $stmt->close();
+        return $comments;
+    }
+
 }
 ?>

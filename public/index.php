@@ -186,7 +186,7 @@ $app->post('/login', function(Request $req,  Response $res) {
         });
 
 
-$app->get('/professors',  function(Request $request,  Response $response)  {
+$app->get('/professor',  function(Request $request,  Response $response)  {
             $data = array();
             $db = new DbHandler($this->logger);
             $parameters = $request->getQueryParams();
@@ -234,7 +234,7 @@ $app->get('/professors',  function(Request $request,  Response $response)  {
 /**
  *  Returns professors by ID
  */
-$app->get('/professors/{id}',  function(Request $req,  Response $res)  {
+$app->get('/professor/{id}',  function(Request $req,  Response $res)  {
     $id = $req->getAttribute('id');
     $db = new DbHandler();
     $result = $db->getProfessorByID($id);
@@ -249,7 +249,66 @@ $app->get('/professors/{id}',  function(Request $req,  Response $res)  {
  * ------------------------ METHODS WITH AUTHENTICATION ------------------------
  */
 
+$app->post('/professor',  function(Request $request,  Response $response)  {
+    $db = new DbHandler($this->logger);
+    $body = $request->getParsedBody();
+    if ($db->createProfessor($body)) {
+        $response_data['error'] = false;
+        return $response->withJson($response_data, 201);
+    } else {
+        $response_data['error'] = true;
+        $response_data['message'] = "An error occurred. Please try again.";
+        return $response->withJson($response_data, 500);
+    }
+});
 
+$app->post('/professor/{id}/comment',  function(Request $request,  Response $response)  {
+    $id = $request->getAttribute('id');
+    $db = new DbHandler($this->logger);
+    $body = $request->getParsedBody();
+    $required_fields = array('comment', 'user_id');
+    $result = verifyRequiredParams($required_fields, $request);
+    if ($result["error"] == true) {
+        return $response->withJson($result, 400);
+    }
+    else {
+        if ($db->createComment($id,$body)) {
+            $response_data['error'] = false;
+            return $response->withJson($response_data, 201);
+        } else {
+            $response_data['error'] = true;
+            $response_data['message'] = "An error occurred. Please try again.";
+            return $response->withJson($response_data, 500);
+        }
+    }
+});
+
+
+$app->get('/professor/{id}/comment',  function(Request $request,  Response $response)  {
+    $id = $request->getAttribute('id');
+    $db = new DbHandler($this->logger);
+    if ($result = $db->getComment($id)) {
+        $response_data['error'] = false;
+        $response_data['comments'] = array();
+
+        while ($prof = $result->fetch_assoc()) {
+            $tmp = array();
+            $tmp["user_id"] = $prof["student_id"];
+            $tmp["comment_text"] = $prof["comment_text"];
+            $tmp["comment_upvote"] = $prof["comment_upvote"];
+            $tmp["comment_downvote"] = $prof["comment_downvote"];
+            $tmp["comment_date"] = $prof["comment_date"];
+            $tmp["comment_ref_code"] = $prof["comment_ref_code"];
+            $tmp["professor_id"] = $prof["professor_id"];
+            array_push($response_data["comments"], $tmp);
+        }
+        return $response->withJson($response_data, 201);
+    } else {
+        $response_data['error'] = true;
+        $response_data['message'] = "An error occurred. Please try again.";
+        return $response->withJson($response_data, 500);
+    }
+});
 /**
  * Verifying required params posted or not
  */
@@ -273,7 +332,7 @@ function verifyRequiredParams($required_fields, Request $request) {
     $response["error"] = $error;
     if ($error) {
         // Required field(s) are missing or empty
-        $response["message"] = 'Required field(s) ' . substr($error_fields, 0, -2) . ' is missing or empty';
+        $response["message"] = 'Required field(s) ' . substr($error_fields, 0, -2) . ' is/are missing or empty';
     }
     return $response;
 }
