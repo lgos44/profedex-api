@@ -53,7 +53,7 @@ $container['logger'] = function($c) {
 
 
 // User id from db - Global Variable
-$user_id = NULL;
+$user_id = null;
 
 /**
  * Adding Middle Layer to authenticate every request
@@ -102,7 +102,7 @@ $mw = function authenticate($req, $res, $next) {
  */
 
  
-$app->post('/register', function(Request $req,  Response $res) {
+$app->post('/register', function (Request $req,  Response $res) {
             // check for required params
 
             $result = verifyRequiredParams(array('name', 'email', 'password'), $req);
@@ -165,7 +165,7 @@ $app->post('/login', function(Request $req,  Response $res) {
             if ($db->checkLogin($email, $password)) {
                 // get the user by email
                 $user = $db->getUserByEmail($email);
-                if ($user != NULL) {
+                if ($user != null) {
                     $response["error"] = false;
                     $response['user_name'] = $user['user_name'];
                     $response['user_email'] = $user['user_email'];
@@ -191,11 +191,10 @@ $app->get('/professor',  function(Request $request,  Response $response)  {
             $db = new DbHandler($this->logger);
             $parameters = $request->getQueryParams();
             // fetching all professors
-            $sort = array_key_exists("sort_by", $parameters)? $parameters["sort_by"] : NULL;
-            $order =  array_key_exists("order", $parameters)? $parameters["order"] : NULL;
-            $start = array_key_exists("start", $parameters)? (int)$parameters["start"] : NULL;
-            $limit = array_key_exists("limit", $parameters)? (int)$parameters["limit"] : NULL;
-            sleep(1);
+            $sort = array_key_exists("sort_by", $parameters)? $parameters["sort_by"] : null;
+            $order =  array_key_exists("order", $parameters)? $parameters["order"] : null;
+            $start = array_key_exists("start", $parameters)? (int)$parameters["start"] : null;
+            $limit = array_key_exists("limit", $parameters)? (int)$parameters["limit"] : null;
 
             if ($request->hasHeader('sort_by')) {
                 $sort = $request->getHeader('sort_by')[0];
@@ -262,7 +261,7 @@ $app->post('/professor',  function(Request $request,  Response $response)  {
     }
 });
 
-$app->post('/professor/{id}/comment',  function(Request $request,  Response $response)  {
+$app->post('/professor/{id}/comment',  function(Request $request,  Response $response){
     $id = $request->getAttribute('id');
     $db = new DbHandler($this->logger);
     $body = $request->getParsedBody();
@@ -270,9 +269,8 @@ $app->post('/professor/{id}/comment',  function(Request $request,  Response $res
     $result = verifyRequiredParams($required_fields, $request);
     if ($result["error"] == true) {
         return $response->withJson($result, 400);
-    }
-    else {
-        if ($db->createComment($id,$body)) {
+    } else {
+        if ($db->createComment($id, $body)) {
             $response_data['error'] = false;
             return $response->withJson($response_data, 201);
         } else {
@@ -284,7 +282,7 @@ $app->post('/professor/{id}/comment',  function(Request $request,  Response $res
 });
 
 
-$app->get('/professor/{id}/comment',  function(Request $request,  Response $response)  {
+$app->get('/professor/{id}/comment',  function (Request $request,  Response $response) {
     $id = $request->getAttribute('id');
     $db = new DbHandler($this->logger);
     if ($result = $db->getComment($id)) {
@@ -293,13 +291,15 @@ $app->get('/professor/{id}/comment',  function(Request $request,  Response $resp
 
         while ($prof = $result->fetch_assoc()) {
             $tmp = array();
-            $tmp["user_id"] = $prof["student_id"];
+            $tmp["comment_id"] = $prof["comment_id"];
+            $tmp["user_id"] = $prof["user_id"];
             $tmp["comment_text"] = $prof["comment_text"];
             $tmp["comment_upvote"] = $prof["comment_upvote"];
             $tmp["comment_downvote"] = $prof["comment_downvote"];
             $tmp["comment_date"] = $prof["comment_date"];
             $tmp["comment_ref_code"] = $prof["comment_ref_code"];
             $tmp["professor_id"] = $prof["professor_id"];
+            //$tmp["votes"] = $db->getVote($prof["comment_id"])->fetch_assoc()['sum'];
             array_push($response_data["comments"], $tmp);
         }
         return $response->withJson($response_data, 201);
@@ -308,7 +308,21 @@ $app->get('/professor/{id}/comment',  function(Request $request,  Response $resp
         $response_data['message'] = "An error occurred. Please try again.";
         return $response->withJson($response_data, 500);
     }
+    
 });
+
+
+$app->post('/professor/{id}/comment/{comment_id}/vote',  function (Request $request,  Response $response) {
+    $prof_id = $request->getAttribute('id');
+    $comment_id = $request->getAttribute('comment_id');    
+    $db = new DbHandler($this->logger);
+    if ($db->canVote($comment_id, $prof_id)) {
+    } else {
+
+    }
+
+});
+
 /**
  * Verifying required params posted or not
  */
@@ -344,8 +358,7 @@ function validateEmail($email) {
     if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
         $response["error"] = true;
         $response["message"] = 'Email address is not valid';
-    }
-    else {
+    } else {
         $response["error"] = false;
     }
     return $response;

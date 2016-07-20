@@ -251,9 +251,11 @@ class DbHandler {
     }
 
     public function createComment($id, $data) {
-        $stmt = $this->conn->prepare("INSERT INTO comment (student_id, comment_text, professor_id) VALUES (?, ? ,?) ");
+        $stmt = $this->conn->prepare("INSERT INTO comment (user_id, comment_text, professor_id) VALUES (?, ? ,?) ");
         if ($stmt) {
             $stmt->bind_param('isi', $data['user_id'], $data['comment'], $id);
+
+            $this->logger->addInfo($this->conn->error);
             return $stmt->execute();
         } else {
             $this->logger->addInfo($this->conn->error);
@@ -262,6 +264,7 @@ class DbHandler {
     }
 
     public function getComment($id, $page = 1) {
+        // change to include comments
         $stmt = $this->conn->prepare("SELECT * FROM comment WHERE professor_id = ?");
         $stmt->bind_param("i", $id);
         $stmt->execute();
@@ -270,5 +273,29 @@ class DbHandler {
         return $comments;
     }
 
+    public function getVote($comment_id) {
+        // not needed
+        $stmt = $this->conn->prepare("SELECT sum(vote_val) AS sum FROM vote WHERE comment_id = ?");
+        $stmt->bind_param("i", $comment_id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $stmt->close();
+        return $result;   
+    }
+
+    public function canVote($user_id, $comment_id) {
+        $stmt = $this->conn->prepare("SELECT EXISTS(SELECT 1 FROM vote WHERE voter_id = ? AND comment_id = ? LIMIT 1) ");
+
+        $this->logger->addInfo($this->conn->error);
+        $stmt->bind_param("ii", $user_id, $comment_id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $stmt->close();
+        if (sizeof($result) > 0) {
+            return false;
+        } else {
+            return true;
+        }
+    }
 }
 ?>
