@@ -100,8 +100,6 @@ $mw = function authenticate($req, $res, $next) {
  * method - POST
  * params - name, email, password
  */
-
- 
 $app->post('/register', function (Request $req,  Response $res) {
             // check for required params
 
@@ -288,19 +286,8 @@ $app->get('/professor/{id}/comment',  function (Request $request,  Response $res
     if ($result = $db->getComment($id)) {
         $response_data['error'] = false;
         $response_data['comments'] = array();
-
         while ($prof = $result->fetch_assoc()) {
-            $tmp = array();
-            $tmp["comment_id"] = $prof["comment_id"];
-            $tmp["user_id"] = $prof["user_id"];
-            $tmp["comment_text"] = $prof["comment_text"];
-            $tmp["comment_upvote"] = $prof["comment_upvote"];
-            $tmp["comment_downvote"] = $prof["comment_downvote"];
-            $tmp["comment_date"] = $prof["comment_date"];
-            $tmp["comment_ref_code"] = $prof["comment_ref_code"];
-            $tmp["professor_id"] = $prof["professor_id"];
-            //$tmp["votes"] = $db->getVote($prof["comment_id"])->fetch_assoc()['sum'];
-            array_push($response_data["comments"], $tmp);
+            array_push($response_data["comments"], $prof);
         }
         return $response->withJson($response_data, 201);
     } else {
@@ -314,11 +301,32 @@ $app->get('/professor/{id}/comment',  function (Request $request,  Response $res
 
 $app->post('/professor/{id}/comment/{comment_id}/vote',  function (Request $request,  Response $response) {
     $prof_id = $request->getAttribute('id');
-    $comment_id = $request->getAttribute('comment_id');    
-    $db = new DbHandler($this->logger);
-    if ($db->canVote($comment_id, $prof_id)) {
-    } else {
+    $comment_id = $request->getAttribute('comment_id');  
 
+    $user_id = $request->getParsedBody()['user_id'];
+    $vote_val = $request->getParsedBody()['vote_val'];
+    $response_data = array();
+
+    if (array_key_exists( 'user_id', $body_data) ) {
+        $db = new DbHandler($this->logger);
+        if ($db->canVote($user_id, $comment_id)) {
+            if ($db->createVote($user_id, $comment_id, $vote_val)) {
+                $response_data["error"] = false;
+                return $response->withJson($response_data, 201); 
+            } else {
+                $response_data["error"] = true;
+                $response_data["message"] = "Internal error occurred.";
+                return $response->withJson($response_data, 500); 
+            }
+        } else {
+            $response_data["error"] = true;
+            $response_data["message"] = "You cannot vote more than once.";
+            return $response->withJson($response_data, 400);
+        }
+    } else {
+        $response_data["error"] = true;
+        $response_data["message"] = "Required field user_id is missing or empty.";
+        return $response->withJson($response_data, 400);
     }
 
 });

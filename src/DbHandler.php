@@ -256,7 +256,9 @@ class DbHandler {
             $stmt->bind_param('isi', $data['user_id'], $data['comment'], $id);
 
             $this->logger->addInfo($this->conn->error);
-            return $stmt->execute();
+            $stmt->execute();
+            $stmt->close();
+            return true;
         } else {
             $this->logger->addInfo($this->conn->error);
             return false;
@@ -264,8 +266,11 @@ class DbHandler {
     }
 
     public function getComment($id, $page = 1) {
-        // change to include comments
-        $stmt = $this->conn->prepare("SELECT * FROM comment WHERE professor_id = ?");
+
+        $stmt = $this->conn->prepare( "SELECT comment.*, v.sum AS vote, user_name from comment LEFT JOIN (SELECT vote.comment_id, sum(vote.vote_val) AS sum FROM vote group by comment_id) v ON comment.comment_id = v.comment_id INNER JOIN user on comment.user_id=user.user_id WHERE comment.professor_id=?");
+
+
+            //"SELECT comment.*, v.sum AS vote from comment LEFT JOIN (SELECT vote.comment_id, sum(vote.vote_val) AS sum FROM vote GROUP BY comment_id) v ON comment.comment_id = v.comment_id WHERE comment.professor_id=?");
         $stmt->bind_param("i", $id);
         $stmt->execute();
         $comments = $stmt->get_result();
@@ -283,15 +288,35 @@ class DbHandler {
         return $result;   
     }
 
+    public function createVote($user_id, $comment_id, $vote_val) {
+        $stmt = $this->conn->prepare("INSERT INTO vote (comment_id, comment_user_id, voter_id, vote_val) VALUES (?, (SELECT user_id FROM comment WHERE comment_id = ?),?,?)");
+
+        /*
+         *  This can return false if user_id is not valid
+         */
+        if ($stmt) {
+            $stmt->bind_param('iiii', $comment_id, $comment_id, $user_id, $vote_val);
+            $this->logger->addInfo($this->conn->error);
+            if ($stmt->execute()) 
+                return true;
+            else
+                return false; 
+        } else {
+            $this->logger->addInfo($this->conn->error);
+            return false;
+        }  
+    }
+
     public function canVote($user_id, $comment_id) {
-        $stmt = $this->conn->prepare("SELECT EXISTS(SELECT 1 FROM vote WHERE voter_id = ? AND comment_id = ? LIMIT 1) ");
+        $stmt = $this->conn->prepare("SELECT 1 FROM vote WHERE voter_id = ? AND comment_id = ? LIMIT 1");
 
         $this->logger->addInfo($this->conn->error);
         $stmt->bind_param("ii", $user_id, $comment_id);
         $stmt->execute();
         $result = $stmt->get_result();
+        $array = $result->fetch_array();
         $stmt->close();
-        if (sizeof($result) > 0) {
+        if (sizeof($array) > 0) {
             return false;
         } else {
             return true;
