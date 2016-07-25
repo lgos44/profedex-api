@@ -242,6 +242,16 @@ class DbHandler {
         return $professor;
     }
 
+    public function getProfessorImagesByID($id) {
+        
+        $stmt = $this->conn->prepare("SELECT picture_path FROM professor_picture WHERE professor_id = ?");
+        $stmt->bind_param("i", $id);
+        $stmt->execute();
+        $pictures = $stmt->get_result();
+        $stmt->close();
+        return $pictures;
+    }
+
     public function getTableFields($table) {
         $stmt = $this->conn->prepare("SHOW COLUMNS FROM $table");
         $stmt->execute();
@@ -295,7 +305,7 @@ class DbHandler {
         $stmt = $this->conn->prepare("INSERT INTO vote (comment_id, comment_user_id, voter_id, vote_val) VALUES (?, (SELECT user_id FROM comment WHERE comment_id = ?),?,?)");
 
         /*
-         *  This can return false if user_id is not valid
+         *  This can return false if user_id is not valid, need to authenticate user before 
          */
         if ($stmt) {
             $stmt->bind_param('iiii', $comment_id, $comment_id, $user_id, $vote_val);

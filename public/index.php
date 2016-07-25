@@ -296,6 +296,25 @@ $app->get('/professor/{id}/comment',  function (Request $request,  Response $res
     }
 });
 
+
+$app->get('/professor/{id}/picture',  function (Request $request,  Response $response) {
+    $id = $request->getAttribute('id');
+    $db = new DbHandler($this->logger);
+    if ($result = $db->getProfessorImagesByID($id)) {
+        //$response_data['error'] = false;
+        //$response_data['pictures'] = array();
+        $response_data = array();
+        while ($picture = $result->fetch_assoc()) {
+            array_push($response_data, $picture);
+        }
+        return $response->withJson($response_data, 201);
+    } else {
+        $response_data['error'] = true;
+        $response_data['message'] = "An error occurred. Please try again.";
+        return $response->withJson($response_data, 500);
+    }
+});
+
 $app->post('/professor/{id}/comment/{comment_id}/vote',  function (Request $request,  Response $response) {
     $prof_id = $request->getAttribute('id');
     $comment_id = $request->getAttribute('comment_id');  

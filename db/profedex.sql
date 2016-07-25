@@ -67,7 +67,7 @@ ENGINE = InnoDB;
 CREATE TABLE IF NOT EXISTS `profedex`.`comment` (
   `comment_id` INT NOT NULL AUTO_INCREMENT,
   `comment_text` VARCHAR(1000) NULL,
-  `comment_date` DATETIME NULL DEFAULT getdate(),
+  `comment_date` DATETIME NULL DEFAULT NOW(),
   `professor_id` INT NOT NULL,
   `user_id` INT UNSIGNED NOT NULL,
   PRIMARY KEY (`comment_id`, `user_id`),
@@ -87,25 +87,42 @@ ENGINE = InnoDB;
 
 
 -- -----------------------------------------------------
+-- Table `profedex`.`rating_type`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `profedex`.`rating_type` (
+  `rating_type_id` INT NOT NULL AUTO_INCREMENT,
+  `rating_type_name` VARCHAR(45) NULL,
+  PRIMARY KEY (`rating_type_id`))
+ENGINE = InnoDB;
+
+
+-- -----------------------------------------------------
 -- Table `profedex`.`rating`
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS `profedex`.`rating` (
   `rating_id` INT NOT NULL AUTO_INCREMENT,
   `rating_name` VARCHAR(45) NULL,
-  `rating_value` INT NULL,
-  `professor_professor_id` INT NOT NULL,
+  `rating_value` FLOAT NULL,
+  `professor_id` INT NOT NULL,
   `user_id` INT UNSIGNED NOT NULL,
+  `rating_type_id` INT NOT NULL,
   PRIMARY KEY (`rating_id`),
-  INDEX `fk_rating_professor1_idx` (`professor_professor_id` ASC),
+  INDEX `fk_rating_professor1_idx` (`professor_id` ASC),
   INDEX `fk_rating_student1_idx` (`user_id` ASC),
+  INDEX `fk_rating_rating_type1_idx` (`rating_type_id` ASC),
   CONSTRAINT `fk_rating_professor1`
-    FOREIGN KEY (`professor_professor_id`)
+    FOREIGN KEY (`professor_id`)
     REFERENCES `profedex`.`professor` (`professor_id`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION,
   CONSTRAINT `fk_rating_student1`
     FOREIGN KEY (`user_id`)
     REFERENCES `profedex`.`user` (`user_id`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION,
+  CONSTRAINT `fk_rating_rating_type1`
+    FOREIGN KEY (`rating_type_id`)
+    REFERENCES `profedex`.`rating_type` (`rating_type_id`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION)
 ENGINE = InnoDB;
@@ -252,16 +269,6 @@ CREATE TABLE IF NOT EXISTS `profedex`.`vote` (
     REFERENCES `profedex`.`user` (`user_id`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION)
-ENGINE = InnoDB;
-
-
--- -----------------------------------------------------
--- Table `profedex`.`rating_type`
--- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `profedex`.`rating_type` (
-  `rating_type_id` INT NOT NULL,
-  `rating_type_name` VARCHAR(45) NULL,
-  PRIMARY KEY (`rating_type_id`))
 ENGINE = InnoDB;
 
 
