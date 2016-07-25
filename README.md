@@ -21,7 +21,9 @@ composer require slim/slim "^3.0"
 ```
 
 Load database dump
+```
 mysql -u root -p profedex < profedexdump.sql
+```
 
 Run PHP server from profedex-api/public:
 ```
