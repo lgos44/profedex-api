@@ -118,17 +118,18 @@ class DbHandler {
      * @param String $email User email id
      */
     public function getUserByEmail($email) {
-        $stmt = $this->conn->prepare("SELECT user_name, user_email, api_key, status, create_time FROM user WHERE user_email = ?");
+        $stmt = $this->conn->prepare("SELECT user_id, user_name, user_email, api_key, status, create_time FROM user WHERE user_email = ?");
         $stmt->bind_param("s", $email);
         if ($stmt->execute()) {
             // $user = $stmt->get_result()->fetch_assoc();
-            $stmt->bind_result($name, $email, $api_key, $status, $created_at);
+            $stmt->bind_result($id, $name, $email, $api_key, $status, $created_at);
             $stmt->fetch();
             $user = array();
             $user["user_name"] = $name;
             $user["user_email"] = $email;
             $user["api_key"] = $api_key;
             $user["status"] = $status;
+            $user["user_id"] = $id;
             $user["created_at"] = $created_at;
             $stmt->close();
             return $user;
@@ -231,7 +232,9 @@ class DbHandler {
     }
 
     public function getProfessorByID($id) {
-        $stmt = $this->conn->prepare("SELECT * FROM professor WHERE professor_id = ?");
+        
+        $stmt = $this->conn->prepare("SELECT * from professor WHERE professor_id = ?");
+
         $stmt->bind_param("i", $id);
         $stmt->execute();
         $professor = $stmt->get_result();
@@ -256,9 +259,11 @@ class DbHandler {
             $stmt->bind_param('isi', $data['user_id'], $data['comment'], $id);
 
             $this->logger->addInfo($this->conn->error);
-            $stmt->execute();
+            $r = false;
+            if ($stmt->execute()) 
+                $r = true;
             $stmt->close();
-            return true;
+            return $r;
         } else {
             $this->logger->addInfo($this->conn->error);
             return false;
@@ -267,10 +272,8 @@ class DbHandler {
 
     public function getComment($id, $page = 1) {
 
-        $stmt = $this->conn->prepare( "SELECT comment.*, v.sum AS vote, user_name from comment LEFT JOIN (SELECT vote.comment_id, sum(vote.vote_val) AS sum FROM vote group by comment_id) v ON comment.comment_id = v.comment_id INNER JOIN user on comment.user_id=user.user_id WHERE comment.professor_id=?");
+        $stmt = $this->conn->prepare("SELECT comment.*, v.sum AS vote, user_name FROM comment LEFT JOIN (SELECT vote.comment_id, SUM(vote.vote_val) AS sum FROM vote GROUP BY comment_id) v ON comment.comment_id = v.comment_id INNER JOIN user ON comment.user_id=user.user_id WHERE comment.professor_id=?");
 
-
-            //"SELECT comment.*, v.sum AS vote from comment LEFT JOIN (SELECT vote.comment_id, sum(vote.vote_val) AS sum FROM vote GROUP BY comment_id) v ON comment.comment_id = v.comment_id WHERE comment.professor_id=?");
         $stmt->bind_param("i", $id);
         $stmt->execute();
         $comments = $stmt->get_result();
@@ -321,6 +324,48 @@ class DbHandler {
         } else {
             return true;
         }
+    }
+    
+    public function getRating($id) {
+        $stmt = $this->conn->prepare(
+            "SELECT 
+             rating_type.rating_type_name AS rating_type_name,
+             AVG(rating.rating_value) AS rating_value,
+             rating_type.rating_type_id
+            FROM 
+             rating 
+            INNER JOIN rating_type ON rating_type.rating_type_id = rating.rating_type_id 
+            WHERE rating.professor_id = ? 
+            GROUP BY rating_type.rating_type_name, rating_type.rating_type_id");
+        if ($stmt) {
+            $stmt->bind_param("i", $id);
+            $stmt->execute();
+            $ratings = $stmt->get_result();
+            $stmt->close();
+        }
+        return $ratings;
+    }
+
+    public function createRating($id, $rate_data) {
+
+        $this->logger->addInfo('rate_value ' . $rate_data['rating_value']);        
+        $stmt = $this->conn->prepare("CALL rate(?, ?, ?, ?)");
+        if ($stmt) {
+            $stmt->bind_param("iiid", 
+                $rate_data['user_id'],
+                $id,
+                $rate_data['rating_type_id'],
+                $rate_data['rating_value']);
+
+            $this->logger->addInfo($this->conn->error);
+            if ($stmt->execute()) 
+                return true;
+            else
+                return false; 
+        } else {
+            $this->logger->addInfo($this->conn->error);
+            return false;
+        }  
     }
 }
 ?>

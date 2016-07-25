@@ -165,6 +165,7 @@ $app->post('/login', function(Request $req,  Response $res) {
                 $user = $db->getUserByEmail($email);
                 if ($user != null) {
                     $response["error"] = false;
+                    $response['user_id'] = $user['user_id'];
                     $response['user_name'] = $user['user_name'];
                     $response['user_email'] = $user['user_email'];
                     $response['api_key'] = $user['api_key'];
@@ -182,7 +183,6 @@ $app->post('/login', function(Request $req,  Response $res) {
             $res_json = $res->withHeader('Content-type', 'application/json');
             return $res_json->withStatus(200)->write(json_encode($response));
         });
-
 
 $app->get('/professor',  function(Request $request,  Response $response)  {
             $data = array();
@@ -279,7 +279,6 @@ $app->post('/professor/{id}/comment',  function(Request $request,  Response $res
     }
 });
 
-
 $app->get('/professor/{id}/comment',  function (Request $request,  Response $response) {
     $id = $request->getAttribute('id');
     $db = new DbHandler($this->logger);
@@ -295,15 +294,14 @@ $app->get('/professor/{id}/comment',  function (Request $request,  Response $res
         $response_data['message'] = "An error occurred. Please try again.";
         return $response->withJson($response_data, 500);
     }
-    
 });
-
 
 $app->post('/professor/{id}/comment/{comment_id}/vote',  function (Request $request,  Response $response) {
     $prof_id = $request->getAttribute('id');
     $comment_id = $request->getAttribute('comment_id');  
 
     $user_id = $request->getParsedBody()['user_id'];
+    $body_data = $request->getParsedBody();
     $vote_val = $request->getParsedBody()['vote_val'];
     $response_data = array();
 
@@ -329,6 +327,41 @@ $app->post('/professor/{id}/comment/{comment_id}/vote',  function (Request $requ
         return $response->withJson($response_data, 400);
     }
 
+});
+
+$app->get('/professor/{id}/rating',  function (Request $request,  Response $response) {
+    $prof_id = $request->getAttribute('id');
+    $db = new DbHandler($this->logger);
+    if ($result = $db->getRating($prof_id)) {
+        $response_data['error'] = false;
+        $response_data['rating'] = array();
+        while ($rating = $result->fetch_assoc()) {
+            $this->logger->addInfo($rating);
+            array_push($response_data["rating"], $rating);
+        }
+        return $response->withJson($response_data, 201);
+    } else {
+        $response_data['error'] = true;
+        $response_data['message'] = "An error occurred. Please try again.";
+        return $response->withJson($response_data, 500);
+    }
+});
+
+$app->post('/professor/{id}/rating',  function (Request $request,  Response $response) {
+    $prof_id = $request->getAttribute('id');
+    $body_data = $request->getParsedBody();
+    $this->logger->addInfo("userid" . $body_data['user_id']);
+    $this->logger->addInfo("rating_type_id" . $body_data['rating_type_id']);
+    $this->logger->addInfo("rating_value" . $body_data['rating_value']);
+    $db = new DbHandler($this->logger);
+    if ($db->createRating($prof_id, $body_data)) {
+        $response_data["error"] = false;
+        return $response->withJson($response_data, 201); 
+    } else {
+        $response_data["error"] = true;
+        $response_data["message"] = "Internal error occurred.";
+        return $response->withJson($response_data, 500); 
+    }
 });
 
 /**
