@@ -1,5 +1,4 @@
 USE profedex;
-DROP PROCEDURE rate;
 delimiter $$
 CREATE PROCEDURE rate(uid INT, pid INT, rid INT, rval FLOAT)
 begin
