@@ -220,11 +220,15 @@ class DbHandler {
         return $professors;
     }
 
-    public function createProfessor($data) {
+    public function createProfessor($data, $picture_path) {
         $stmt = $this->conn->prepare("INSERT INTO professor (professor_name, professor_email, professor_description, professor_room) VALUES (?, ? ,?, ?) ");
         if ($stmt) {
             $stmt->bind_param('ssss', $data['name'], $data['email'], $data['description'], $data['room']);
-            return $stmt->execute();
+            if ($stmt->execute()) {
+                 if ($this->createPicture($stmt->insert_id, $picture_path))
+                    return true;
+            }
+            return false;
         } else {
             $this->logger->addInfo($this->conn->error);
             return false;
@@ -234,7 +238,6 @@ class DbHandler {
     public function getProfessorByID($id) {
         
         $stmt = $this->conn->prepare("SELECT * from professor WHERE professor_id = ?");
-
         $stmt->bind_param("i", $id);
         $stmt->execute();
         $professor = $stmt->get_result();
@@ -250,6 +253,23 @@ class DbHandler {
         $pictures = $stmt->get_result();
         $stmt->close();
         return $pictures;
+    }
+
+    public function createPicture($id, $path) {
+        $stmt = $this->conn->prepare("INSERT INTO professor_picture (professor_id, picture_path) VALUES (?,?)");
+        $this->logger->addInfo($this->conn->error);
+        if ($stmt) {
+            $stmt->bind_param("is", $id, $path);
+            if($stmt->execute()) {
+                $stmt->close();
+                return true;
+            } else {
+                $stmt->close();
+                return false;
+            }   
+        } else {
+            return false;
+        }
     }
 
     public function getTableFields($table) {

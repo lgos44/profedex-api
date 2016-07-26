@@ -247,10 +247,24 @@ $app->get('/professor/{id}',  function(Request $req,  Response $res)  {
  */
 
 $app->post('/professor',  function(Request $request,  Response $response)  {
+
+    $files = $request->getUploadedFiles();
+    if (empty($files['picture'])) {
+        throw new Exception('Expected a newfile');
+    }
+    $newfile = $files['picture'];
+    if ($newfile->getError() === UPLOAD_ERR_OK) {
+        $uploadFileName = $newfile->getClientFilename();
+        $picture_path = "pictures/" . uniqid() . $uploadFileName;
+        $newfile->moveTo($picture_path);
+        //$db->createPicture($body["professor_id"], $picture_path);
+    }
+
     $db = new DbHandler($this->logger);
     $body = $request->getParsedBody();
-    if ($db->createProfessor($body)) {
+    if ($db->createProfessor($body, $picture_path)) {
         $response_data['error'] = false;
+
         return $response->withJson($response_data, 201);
     } else {
         $response_data['error'] = true;
