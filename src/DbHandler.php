@@ -397,5 +397,14 @@ class DbHandler {
             return false;
         }  
     }
+    public function getRatingTypes() {
+        $stmt = $this->conn->prepare("SELECT * FROM rating_type");
+        if ($stmt) {
+            $stmt->execute();
+            $ratings = $stmt->get_result();
+            $stmt->close();
+        }
+        return $ratings;
+    }
 }
 ?>

@@ -372,6 +372,23 @@ $app->get('/professor/{id}/rating',  function (Request $request,  Response $resp
             $this->logger->addInfo($rating);
             array_push($response_data["rating"], $rating);
         }
+
+        $result_types = $db->getRatingTypes();
+        while ($tmp = $result_types->fetch_assoc()) {
+            $found = false;
+            foreach ($response_data["rating"] as $key => $value) {
+                if ( $value['rating_type_id'] == $tmp['rating_type_id'] )
+                    $found = true;
+                $this->logger->addInfo($key);
+                $this->logger->addInfo($value['rating_type_id']);
+            }
+            if (!$found) {
+                $tmp['rating_value'] = null;
+                array_push($response_data["rating"], $tmp);
+            }
+        }
+
+
         return $response->withJson($response_data, 201);
     } else {
         $response_data['error'] = true;
@@ -394,6 +411,23 @@ $app->post('/professor/{id}/rating',  function (Request $request,  Response $res
         $response_data["error"] = true;
         $response_data["message"] = "Internal error occurred.";
         return $response->withJson($response_data, 500); 
+    }
+});
+
+$app->get('/rating_types',  function (Request $request,  Response $response) {
+    $db = new DbHandler($this->logger);
+    if ($result = $db->getRatingTypes()) {
+        $response_data['error'] = false;
+        $response_data['rating'] = array();
+        while ($rating = $result->fetch_assoc()) {
+            $this->logger->addInfo($rating);
+            array_push($response_data["rating"], $rating);
+        }
+        return $response->withJson($response_data, 201);
+    } else {
+        $response_data['error'] = true;
+        $response_data['message'] = "An error occurred. Please try again.";
+        return $response->withJson($response_data, 500);
     }
 });
 
