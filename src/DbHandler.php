@@ -225,8 +225,13 @@ class DbHandler {
         if ($stmt) {
             $stmt->bind_param('ssss', $data['name'], $data['email'], $data['description'], $data['room']);
             if ($stmt->execute()) {
-                 if ($this->createPicture($stmt->insert_id, $picture_path))
-                    return true;
+                if (isset($picture_path)){
+                    if ($this->createPicture($stmt->insert_id, $picture_path))
+                        return true;
+                    else 
+                        return false;
+                }
+                return true;
             }
             return false;
         } else {
@@ -264,6 +269,7 @@ class DbHandler {
                 $stmt->close();
                 return true;
             } else {
+                $this->logger->addInfo($this->conn->error);
                 $stmt->close();
                 return false;
             }   
@@ -291,7 +297,7 @@ class DbHandler {
             $this->logger->addInfo($this->conn->error);
             $r = false;
             if ($stmt->execute()) 
-                $r = true;
+                $r = $stmt->insert_id;
             $stmt->close();
             return $r;
         } else {
@@ -302,7 +308,7 @@ class DbHandler {
 
     public function getComment($id, $page = 1) {
 
-        $stmt = $this->conn->prepare("SELECT comment.*, v.sum AS vote, user_name FROM comment LEFT JOIN (SELECT vote.comment_id, SUM(vote.vote_val) AS sum FROM vote GROUP BY comment_id) v ON comment.comment_id = v.comment_id INNER JOIN user ON comment.user_id=user.user_id WHERE comment.professor_id=?");
+        $stmt = $this->conn->prepare("SELECT comment.*, v.sum AS vote, user_name FROM comment LEFT JOIN (SELECT vote.comment_id, SUM(vote.vote_val) AS sum FROM vote GROUP BY comment_id) v ON comment.comment_id = v.comment_id INNER JOIN user ON comment.user_id=user.user_id WHERE comment.professor_id=? ORDER BY vote DESC");
 
         $stmt->bind_param("i", $id);
         $stmt->execute();
@@ -378,7 +384,7 @@ class DbHandler {
 
     public function createRating($id, $rate_data) {
 
-        $this->logger->addInfo('rate_value ' . $rate_data['rating_value']);        
+        //$this->logger->addInfo('rate_value ' . $rate_data['rating_value']);        
         $stmt = $this->conn->prepare("CALL rate(?, ?, ?, ?)");
         if ($stmt) {
             $stmt->bind_param("iiid", 

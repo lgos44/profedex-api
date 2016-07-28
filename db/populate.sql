@@ -1,6 +1,6 @@
 use profedex;
 
-delimiter $$
+DELIMITER $$
 CREATE PROCEDURE rate(uid INT, pid INT, rid INT, rval FLOAT)
 begin
 IF EXISTS(SELECT * FROM rating WHERE user_id = uid AND professor_id = pid AND rating_type_id = rid) THEN
@@ -9,8 +9,15 @@ ELSE
 	INSERT INTO rating (rating_value, professor_id, user_id, rating_type_id) VALUES (rval, pid, uid, rid);
 END IF;
     end $$
-delimiter ;
+DELIMITER ;
 
+DELIMITER $$
+CREATE TRIGGER picture AFTER INSERT ON professor_picture
+FOR EACH ROW
+BEGIN
+UPDATE professor SET professor.professor_picture=NEW.picture_path WHERE professor_id = NEW.professor_id;
+END $$
+DELIMITER ;
 /* Inserts academic_center */
 INSERT INTO `profedex`.`academic_center` (`center_id`, `center_name`) VALUES ('1', 'Engenharia Química');
 INSERT INTO `profedex`.`academic_center` (`center_id`, `center_name`) VALUES ('2', 'Engenharia Elétrica');

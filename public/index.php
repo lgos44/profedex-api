@@ -248,16 +248,19 @@ $app->get('/professor/{id}',  function(Request $req,  Response $res)  {
 
 $app->post('/professor',  function(Request $request,  Response $response)  {
 
+    $picture_path = null;
     $files = $request->getUploadedFiles();
     if (empty($files['picture'])) {
-        throw new Exception('Expected a newfile');
-    }
-    $newfile = $files['picture'];
-    if ($newfile->getError() === UPLOAD_ERR_OK) {
-        $uploadFileName = $newfile->getClientFilename();
-        $picture_path = "pictures/" . uniqid() . $uploadFileName;
-        $newfile->moveTo($picture_path);
+        //throw new Exception('Expected a newfile');
+        $this->logger->addInfo( "NO PICTURE");
+    } else {
+        $newfile = $files['picture'];
+        if ($newfile->getError() === UPLOAD_ERR_OK) {
+            $uploadFileName = $newfile->getClientFilename();
+            $picture_path = "pictures/" . uniqid() . $uploadFileName;
+            $newfile->moveTo($picture_path);
         //$db->createPicture($body["professor_id"], $picture_path);
+        }  
     }
 
     $db = new DbHandler($this->logger);
@@ -282,8 +285,10 @@ $app->post('/professor/{id}/comment',  function(Request $request,  Response $res
     if ($result["error"] == true) {
         return $response->withJson($result, 400);
     } else {
-        if ($db->createComment($id, $body)) {
+        $tmp = $db->createComment($id, $body);
+        if ($tmp) {
             $response_data['error'] = false;
+            $response_data['id'] = $tmp;
             return $response->withJson($response_data, 201);
         } else {
             $response_data['error'] = true;
@@ -369,7 +374,7 @@ $app->get('/professor/{id}/rating',  function (Request $request,  Response $resp
         $response_data['error'] = false;
         $response_data['rating'] = array();
         while ($rating = $result->fetch_assoc()) {
-            $this->logger->addInfo($rating);
+            //$this->logger->addInfo($rating);
             array_push($response_data["rating"], $rating);
         }
 
@@ -379,8 +384,8 @@ $app->get('/professor/{id}/rating',  function (Request $request,  Response $resp
             foreach ($response_data["rating"] as $key => $value) {
                 if ( $value['rating_type_id'] == $tmp['rating_type_id'] )
                     $found = true;
-                $this->logger->addInfo($key);
-                $this->logger->addInfo($value['rating_type_id']);
+                //$this->logger->addInfo($key);
+                //$this->logger->addInfo($value['rating_type_id']);
             }
             if (!$found) {
                 $tmp['rating_value'] = null;
@@ -400,9 +405,9 @@ $app->get('/professor/{id}/rating',  function (Request $request,  Response $resp
 $app->post('/professor/{id}/rating',  function (Request $request,  Response $response) {
     $prof_id = $request->getAttribute('id');
     $body_data = $request->getParsedBody();
-    $this->logger->addInfo("userid" . $body_data['user_id']);
-    $this->logger->addInfo("rating_type_id" . $body_data['rating_type_id']);
-    $this->logger->addInfo("rating_value" . $body_data['rating_value']);
+    //$this->logger->addInfo("userid" . $body_data['user_id']);
+    //$this->logger->addInfo("rating_type_id" . $body_data['rating_type_id']);
+    //$this->logger->addInfo("rating_value" . $body_data['rating_value']);
     $db = new DbHandler($this->logger);
     if ($db->createRating($prof_id, $body_data)) {
         $response_data["error"] = false;
@@ -420,7 +425,7 @@ $app->get('/rating_types',  function (Request $request,  Response $response) {
         $response_data['error'] = false;
         $response_data['rating'] = array();
         while ($rating = $result->fetch_assoc()) {
-            $this->logger->addInfo($rating);
+            //$this->logger->addInfo($rating);
             array_push($response_data["rating"], $rating);
         }
         return $response->withJson($response_data, 201);
