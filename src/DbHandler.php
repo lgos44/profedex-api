@@ -221,20 +221,29 @@ class DbHandler {
     }
 
     public function createProfessor($data, $picture_path) {
+        $this->logger->addInfo("Create professor");
         $stmt = $this->conn->prepare("INSERT INTO professor (professor_name, professor_email, professor_description, professor_room) VALUES (?, ? ,?, ?) ");
+        $this->logger->addInfo($this->conn->error);
         if ($stmt) {
             $stmt->bind_param('ssss', $data['name'], $data['email'], $data['description'], $data['room']);
             if ($stmt->execute()) {
                 if (isset($picture_path)){
-                    if ($this->createPicture($stmt->insert_id, $picture_path))
+                    if ($this->createPicture($stmt->insert_id, $picture_path)){
+                        $this->logger->addInfo("Created pic");
                         return true;
-                    else 
+                    }
+                    else {
+                        $this->logger->addInfo("error Create pic");
+                        $this->logger->addInfo($this->conn->error);
                         return false;
+                    }
                 }
                 return true;
-            }
-            return false;
+            } else {
+            $this->logger->addInfo($this->conn->error);
+            return false;}
         } else {
+            $this->logger->addInfo("error insert");
             $this->logger->addInfo($this->conn->error);
             return false;
         }

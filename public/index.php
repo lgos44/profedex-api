@@ -248,23 +248,28 @@ $app->get('/professor/{id}',  function(Request $req,  Response $res)  {
 
 $app->post('/professor',  function(Request $request,  Response $response)  {
 
+    $this->logger->addInfo("Teste");
     $picture_path = null;
     $files = $request->getUploadedFiles();
     if (empty($files['picture'])) {
         //throw new Exception('Expected a newfile');
-        $this->logger->addInfo( "NO PICTURE");
+        $this->logger->addInfo("NO PICTURE");
     } else {
+        $this->logger->addInfo( "HAS PICTURE");
         $newfile = $files['picture'];
         if ($newfile->getError() === UPLOAD_ERR_OK) {
+            $this->logger->addInfo( "NO ERROR");
             $uploadFileName = $newfile->getClientFilename();
-            $picture_path = "pictures/" . uniqid() . $uploadFileName;
+            $picture_path = "picture/" . uniqid() . $uploadFileName;
+            $this->logger->addInfo($picture_path);
             $newfile->moveTo($picture_path);
+            $this->logger->addInfo("MOVED");
         //$db->createPicture($body["professor_id"], $picture_path);
         }  
     }
-
     $db = new DbHandler($this->logger);
     $body = $request->getParsedBody();
+    $this->logger->addInfo("Teste2");
     if ($db->createProfessor($body, $picture_path)) {
         $response_data['error'] = false;
 
